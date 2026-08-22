@@ -7,3 +7,6 @@ AGENTS.md
 node_modules/
 dist/
 coverage/
+
+# Teaching workspace (personal learning materials)
+learning/
