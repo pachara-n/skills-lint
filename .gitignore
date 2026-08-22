@@ -1,0 +1,9 @@
+# Personal notes - never push these (contain private context, in Thai)
+HANDOFF.md
+PLAN.md
+START-HERE.md
+AGENTS.md
+
+node_modules/
+dist/
+coverage/

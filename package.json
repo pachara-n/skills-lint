@@ -1,0 +1,26 @@
+{
+  "name": "skills-lint",
+  "version": "0.1.0",
+  "description": "Audit AI agent skills folders for problems that fail silently",
+  "type": "module",
+  "bin": {
+    "skills-lint": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "commander": "^15.0.0"
+  }
+}
