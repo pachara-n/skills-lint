@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "test": "vitest run",
+    "test": "npm run build && vitest run",
     "lint": "tsc --noEmit"
   },
   "engines": {
@@ -16,6 +16,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
