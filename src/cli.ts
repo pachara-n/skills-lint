@@ -1,11 +1,12 @@
 import { program } from "commander";
 import { lint } from "./lint.js";
 import { defaultRoots } from "./roots.js";
+import pkg from "../package.json" with { type: "json" };
 
 program
   .name("skills-lint")
   .description("Audit AI agent skills folders for problems that fail silently")
-  .version("0.1.0")
+  .version(pkg.version)
   .option("--format <format>", "output format: text or json", "text")
   .argument(
     "[paths...]",

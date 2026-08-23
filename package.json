@@ -1,6 +1,6 @@
 {
   "name": "skills-lint",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Audit AI agent skills folders for problems that fail silently",
   "type": "module",
   "bin": {
