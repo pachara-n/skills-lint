@@ -82,7 +82,7 @@ checked 6 skill folder(s)
 
 ## CI
 
-Exit code is `0` when clean and `1` when issues are found, so it drops straight into CI. As a one-line GitHub Action:
+Exit code is `0` when clean (or when the only findings are advisory `sprawled` warnings) and `1` when issues are found, so it drops straight into CI. As a one-line GitHub Action:
 
 ```yaml
 - uses: pachara-n/skills-lint@v1
