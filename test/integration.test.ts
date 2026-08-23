@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -34,5 +36,21 @@ describe("skills-lint CLI", () => {
     expect(res.stdout).toContain("[shadowed]");
     expect(res.stdout).toContain("root-b");
     expect(res.stdout).toContain("first scanned wins");
+  });
+
+  it("auto-detects project-level skills folders when no path is given", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "skills-lint-auto-"));
+    mkdirSync(join(tmp, ".claude", "skills", "demo"), { recursive: true });
+    writeFileSync(
+      join(tmp, ".claude", "skills", "demo", "SKILL.md"),
+      '---\nname: demo\ndescription: A valid demo skill.\n---\n\n# Demo\n',
+    );
+
+    const res = spawnSync(process.execPath, [cli], { encoding: "utf8", cwd: tmp });
+    // assert only machine-independent behavior: the root was auto-detected and
+    // scanned (exit status depends on whatever else exists on the host)
+    expect(res.stderr).toBe("");
+    expect(res.stdout).toContain("auto-detected");
+    expect(res.stdout).toContain(join(tmp, ".claude", "skills"));
   });
 });
