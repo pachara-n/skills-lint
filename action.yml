@@ -8,5 +8,5 @@ inputs:
 runs:
   using: composite
   steps:
-    - run: npx skills-lint ${{ inputs.paths }}
+    - run: npx --yes --package skills-lint skills-lint ${{ inputs.paths }}
       shell: bash
