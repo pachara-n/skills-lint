@@ -53,4 +53,15 @@ describe("skills-lint CLI", () => {
     expect(res.stdout).toContain("auto-detected");
     expect(res.stdout).toContain(join(tmp, ".claude", "skills"));
   });
+
+  it("outputs machine-readable json with --format json", () => {
+    const res = run(join(fixtures, "broken"), "--format", "json");
+    expect(res.status).toBe(1);
+    const report = JSON.parse(res.stdout) as {
+      skillsChecked: number;
+      issues: { rule: string }[];
+    };
+    expect(report.skillsChecked).toBe(3);
+    expect(report.issues.map((i) => i.rule)).toContain("no-skill-md");
+  });
 });

@@ -52,6 +52,12 @@ npx skills-lint <path> [<path> ...]
 
 Explicit paths are the right choice in CI and for custom setups. Pass multiple roots to catch shadowing between them.
 
+Machine-readable output for CI tooling:
+
+```console
+npx skills-lint --format json
+```
+
 ## What it checks
 
 | Rule | Problem | Why it matters |
@@ -94,7 +100,6 @@ npm run build   # bundle to dist/ via tsup
 
 ## Roadmap
 
-- `--format json` for machine-readable output
 - Rules for skills sprawled across per-agent homes (`.claude/` vs `.codex/` vs `.zcode/`)
 - One-line GitHub Action packaging
 
