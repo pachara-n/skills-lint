@@ -6,15 +6,29 @@
   "bin": {
     "skills-lint": "dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "ai-agents", "claude", "codex", "cursor", "skills",
+    "lint", "cli", "developer-tools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pachara-n/skills-lint.git"
+  },
+  "bugs": "https://github.com/pachara-n/skills-lint/issues",
+  "homepage": "https://github.com/pachara-n/skills-lint#readme",
+  "license": "MIT",
+  "author": "Pachara Nokroy",
   "scripts": {
     "build": "tsup",
     "test": "npm run build && vitest run",
     "lint": "tsc --noEmit"
   },
-  "engines": {
-    "node": ">=20"
-  },
-  "license": "MIT",
   "devDependencies": {
     "@types/node": "^26.2.0",
     "tsup": "^8.5.1",
