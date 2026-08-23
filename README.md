@@ -11,9 +11,13 @@ Your AI agent (Claude Code, Codex CLI, Cursor, ZCode, …) loads skills at start
 `skills-lint` scans your skills folders and reports every problem that would otherwise go unnoticed.
 
 ```console
-$ npx skills-lint ~/.agents/skills ~/.codex/skills
+$ npx skills-lint
 
-skills-lint: checked 58 skill folder(s) in 2 root(s)
+skills-lint: scanning 2 root(s) (auto-detected)
+  - ~/.agents/skills
+  - ~/.codex/skills
+
+checked 58 skill folder(s)
 
 ✖ Found 2 issue(s):
 
@@ -37,10 +41,16 @@ At startup an agent parses each `SKILL.md`, validates the frontmatter, and injec
 No install needed:
 
 ```console
+npx skills-lint
+```
+
+With no arguments it auto-detects the usual skills folders on your machine — `.agents/`, `.claude/`, `.codex/`, `.cursor/`, `.zcode/`, project-level first, then your home directory — and prints exactly what it scanned. To scan specific roots instead, pass them explicitly:
+
+```console
 npx skills-lint <path> [<path> ...]
 ```
 
-Point it at one or more skills folders — the same roots your agents scan (`~/.agents/skills`, `~/.claude/skills`, `~/.codex/skills`, a repo's `.claude/skills`, …). Pass multiple roots to catch shadowing between them.
+Explicit paths are the right choice in CI and for custom setups. Pass multiple roots to catch shadowing between them.
 
 ## What it checks
 
@@ -54,8 +64,11 @@ Point it at one or more skills folders — the same roots your agents scan (`~/.
 Clean folders exit quietly:
 
 ```console
-$ npx skills-lint ~/.agents/skills
-skills-lint: checked 56 skill folder(s) in 1 root(s)
+$ npx skills-lint .claude/skills
+skills-lint: scanning 1 root(s)
+  - .claude/skills
+
+checked 6 skill folder(s)
 
 ✔ No issues found
 ```
