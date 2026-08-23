@@ -36,6 +36,7 @@ describe("skills-lint CLI", () => {
     expect(res.stdout).toContain("[shadowed]");
     expect(res.stdout).toContain("root-b");
     expect(res.stdout).toContain("first scanned wins");
+    expect(res.stdout).toContain("[sprawled]");
   });
 
   it("auto-detects project-level skills folders when no path is given", () => {

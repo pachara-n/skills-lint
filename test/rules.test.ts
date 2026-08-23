@@ -3,6 +3,7 @@ import type { SkillFolder } from "../src/scan.js";
 import { noSkillMd } from "../src/rules/no-skill-md.js";
 import { descriptionRule, MAX_DESCRIPTION_LENGTH } from "../src/rules/description.js";
 import { shadowing } from "../src/rules/shadowing.js";
+import { sprawled } from "../src/rules/sprawled.js";
 
 const skill = (over: Partial<SkillFolder>): SkillFolder => ({
   root: "r",
@@ -69,5 +70,15 @@ describe("rule 3 — shadowing", () => {
 
   it("passes unique names", () => {
     expect(shadowing([a, skill({ name: "other", path: "root-b/other" })])).toHaveLength(0);
+  });
+});
+
+describe("rule 4 — sprawled", () => {
+  it("flags when skills live in several homes", () => {
+    expect(sprawled(["~/.agents/skills", "~/.codex/skills"])).toHaveLength(1);
+  });
+
+  it("passes a single home", () => {
+    expect(sprawled(["~/.agents/skills"])).toHaveLength(0);
   });
 });

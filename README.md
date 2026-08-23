@@ -66,6 +66,7 @@ npx skills-lint --format json
 | `description` | `description` missing or over 1024 characters | Dropped at startup, silently (spec limit, enforced by Codex & Cursor) |
 | `description` | Frontmatter block missing or unterminated (`---`) | The file is not recognized as a skill at all |
 | `shadowed` | Same skill name in several scanned roots | First root wins; every later copy never loads |
+| `sprawled` | Skills spread across several scanned homes | No single source of truth — pruning and updates inevitably miss one |
 
 Clean folders exit quietly:
 
@@ -100,7 +101,6 @@ npm run build   # bundle to dist/ via tsup
 
 ## Roadmap
 
-- Rules for skills sprawled across per-agent homes (`.claude/` vs `.codex/` vs `.zcode/`)
 - One-line GitHub Action packaging
 
 ## License

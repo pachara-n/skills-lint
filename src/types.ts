@@ -1,4 +1,4 @@
-export type RuleId = "no-skill-md" | "description" | "shadowed";
+export type RuleId = "no-skill-md" | "description" | "shadowed" | "sprawled";
 
 export interface Issue {
   rule: RuleId;
