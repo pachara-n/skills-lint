@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Simulate a user repo (no local skills-lint package)
+        run: rm package.json package-lock.json
       - uses: ./ # run this repo's own action against known-good fixtures
         with:
           paths: test/fixtures/valid
