@@ -29,4 +29,12 @@ describe("defaultRoots", () => {
   it("returns an empty list when nothing exists", () => {
     expect(defaultRoots(makeDir(), makeDir())).toEqual([]);
   });
+
+  it("never returns duplicate roots when run from the home directory", () => {
+    const home = makeDir();
+    mkdirSync(join(home, ".claude", "skills"), { recursive: true });
+
+    const roots = defaultRoots(home, home); // cwd === home — both lists identical
+    expect(roots).toEqual([join(home, ".claude", "skills")]);
+  });
 });

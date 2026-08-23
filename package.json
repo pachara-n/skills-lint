@@ -1,6 +1,6 @@
 {
   "name": "skills-lint",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Audit AI agent skills folders for problems that fail silently",
   "type": "module",
   "bin": {
@@ -13,8 +13,14 @@
     "node": ">=20"
   },
   "keywords": [
-    "ai-agents", "claude", "codex", "cursor", "skills",
-    "lint", "cli", "developer-tools"
+    "ai-agents",
+    "claude",
+    "codex",
+    "cursor",
+    "skills",
+    "lint",
+    "cli",
+    "developer-tools"
   ],
   "repository": {
     "type": "git",

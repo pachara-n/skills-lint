@@ -7,12 +7,13 @@ const AGENT_DIRS = [".agents", ".claude", ".codex", ".cursor", ".zcode"];
 /**
  * Well-known skills folders, project-level first (project skills shadow
  * user-level skills in most agents), then user-level. Only folders that
- * actually exist are returned.
+ * actually exist are returned. Deduplicated — running from the home
+ * directory makes both lists identical.
  */
 export function defaultRoots(cwd: string = process.cwd(), home: string = homedir()): string[] {
   const candidates = [
     ...AGENT_DIRS.map((dir) => join(cwd, dir, "skills")),
     ...AGENT_DIRS.map((dir) => join(home, dir, "skills")),
   ];
-  return candidates.filter((path) => existsSync(path));
+  return [...new Set(candidates.filter((path) => existsSync(path)))];
 }
