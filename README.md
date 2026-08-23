@@ -50,7 +50,7 @@ With no arguments it auto-detects the usual skills folders on your machine — `
 npx skills-lint <path> [<path> ...]
 ```
 
-Explicit paths are the right choice in CI and for custom setups. Pass multiple roots to catch shadowing between them.
+Explicit paths are the right choice in CI and for custom setups. Pass multiple roots to catch shadowing between them; sprawl across roots is reported too, but it is advisory — it never fails the run.
 
 Machine-readable output for CI tooling:
 
@@ -66,7 +66,7 @@ npx skills-lint --format json
 | `description` | `description` missing or over 1024 characters | Dropped at startup, silently (spec limit, enforced by Codex & Cursor) |
 | `description` | Frontmatter block missing or unterminated (`---`) | The file is not recognized as a skill at all |
 | `shadowed` | Same skill name in several scanned roots | First root wins; every later copy never loads |
-| `sprawled` | Skills spread across several scanned homes | No single source of truth — pruning and updates inevitably miss one |
+| `sprawled` *(advisory)* | Skills spread across several scanned homes | No single source of truth — pruning and updates inevitably miss one. Reported in text and json output, but never fails CI |
 
 Clean folders exit quietly:
 

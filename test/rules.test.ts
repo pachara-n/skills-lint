@@ -1,5 +1,9 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { SkillFolder } from "../src/scan.js";
+import { lint } from "../src/lint.js";
 import { noSkillMd } from "../src/rules/no-skill-md.js";
 import { descriptionRule, MAX_DESCRIPTION_LENGTH } from "../src/rules/description.js";
 import { shadowing } from "../src/rules/shadowing.js";
@@ -80,5 +84,19 @@ describe("rule 4 — sprawled", () => {
 
   it("passes a single home", () => {
     expect(sprawled(["~/.agents/skills"])).toHaveLength(0);
+  });
+
+  it("counts only roots that actually contain skills — an empty root is not a home", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "skills-lint-sprawl-"));
+    const home = join(tmp, "home");
+    mkdirSync(join(home, "only-skill"), { recursive: true });
+    writeFileSync(
+      join(home, "only-skill", "SKILL.md"),
+      '---\nname: only-skill\ndescription: A fine skill.\n---\n\n# Only\n',
+    );
+    mkdirSync(join(tmp, "empty"), { recursive: true });
+
+    const { issues } = lint([home, join(tmp, "empty")]);
+    expect(issues.find((i) => i.rule === "sprawled")).toBeUndefined();
   });
 });

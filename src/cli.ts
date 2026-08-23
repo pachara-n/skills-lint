@@ -14,9 +14,14 @@ program
   )
   .action((paths: string[], options: { format: string }) => {
     const explicit = paths.length > 0;
-    const roots = explicit ? paths : defaultRoots();
+    const roots = explicit ? [...new Set(paths)] : defaultRoots();
 
     if (roots.length === 0) {
+      if (options.format === "json") {
+        console.log(
+          JSON.stringify({ roots: [], skillsChecked: 0, issues: [] }, null, 2),
+        );
+      }
       console.error("No skills folders found in the usual locations.");
       console.error("Pass a path explicitly: skills-lint <path> [...]");
       process.exitCode = 1;
@@ -50,7 +55,9 @@ program
         }
       }
     }
-    if (issues.length > 0) process.exitCode = 1;
+    // sprawled is advisory: reported in text and json, but only hard
+    // issues fail the run (multi-root scans are a legitimate setup)
+    if (issues.some((i) => i.rule !== "sprawled")) process.exitCode = 1;
   });
 
 program.parse();

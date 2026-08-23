@@ -32,11 +32,24 @@ describe("skills-lint CLI", () => {
 
   it("flags shadowed skills across two roots", () => {
     const res = run(join(fixtures, "shadow", "root-a"), join(fixtures, "shadow", "root-b"));
+    // exits 1 because [shadowed] fires — sprawled alone would not (advisory)
     expect(res.status).toBe(1);
     expect(res.stdout).toContain("[shadowed]");
     expect(res.stdout).toContain("root-b");
     expect(res.stdout).toContain("first scanned wins");
     expect(res.stdout).toContain("[sprawled]");
+  });
+
+  it("reports sprawl across two healthy roots but exits 0 (advisory)", () => {
+    const res = run(join(fixtures, "valid"), join(fixtures, "valid-b"));
+    expect(res.stdout).toContain("[sprawled]");
+    expect(res.status).toBe(0);
+  });
+
+  it("dedupes repeated root arguments", () => {
+    const res = run(join(fixtures, "valid"), join(fixtures, "valid"));
+    expect(res.stdout).toContain("scanning 1 root(s)");
+    expect(res.status).toBe(0);
   });
 
   it("auto-detects project-level skills folders when no path is given", () => {
@@ -64,5 +77,40 @@ describe("skills-lint CLI", () => {
     };
     expect(report.skillsChecked).toBe(3);
     expect(report.issues.map((i) => i.rule)).toContain("no-skill-md");
+  });
+
+  it("emits a parseable json contract for a clean run (exit 0)", () => {
+    const res = run(join(fixtures, "valid"), "--format", "json");
+    expect(res.status).toBe(0);
+    const report = JSON.parse(res.stdout) as {
+      roots: string[];
+      skillsChecked: number;
+      issues: unknown[];
+    };
+    expect(Array.isArray(report.roots)).toBe(true);
+    expect(report.roots).toContain(join(fixtures, "valid"));
+    expect(report.skillsChecked).toBeGreaterThan(0);
+    expect(report.issues).toEqual([]);
+  });
+
+  it("emits a parseable empty json envelope when no roots are found", () => {
+    // isolate cwd AND home so auto-detect finds nothing, on any host
+    const tmp = mkdtempSync(join(tmpdir(), "skills-lint-noroots-"));
+    const env = { ...process.env, HOME: tmp, USERPROFILE: tmp };
+    const res = spawnSync(process.execPath, [cli, "--format", "json"], {
+      encoding: "utf8",
+      cwd: tmp,
+      env,
+    });
+    expect(res.status).toBe(1);
+    const report = JSON.parse(res.stdout) as {
+      roots: string[];
+      skillsChecked: number;
+      issues: unknown[];
+    };
+    expect(report.roots).toEqual([]);
+    expect(report.skillsChecked).toBe(0);
+    expect(report.issues).toEqual([]);
+    expect(res.stderr).toContain("No skills folders found");
   });
 });
