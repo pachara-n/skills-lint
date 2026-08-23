@@ -82,14 +82,19 @@ checked 6 skill folder(s)
 
 ## CI
 
-Exit code is `0` when clean and `1` when issues are found, so it drops straight into CI:
+Exit code is `0` when clean and `1` when issues are found, so it drops straight into CI. As a one-line GitHub Action:
 
 ```yaml
-# .github/workflows/skills.yml
-- run: npx skills-lint .claude/skills
+- uses: pachara-n/skills-lint@v1
+  with:
+    paths: .claude/skills   # optional — auto-detects when omitted
 ```
 
-Fail the build before a silently-broken skill ships to your whole team.
+Or run it directly:
+
+```yaml
+- run: npx skills-lint .claude/skills
+```
 
 ## Development
 
@@ -98,10 +103,6 @@ npm install
 npm test        # build + unit & integration tests (fixtures in test/fixtures)
 npm run build   # bundle to dist/ via tsup
 ```
-
-## Roadmap
-
-- One-line GitHub Action packaging
 
 ## License
 

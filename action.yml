@@ -1,0 +1,12 @@
+name: skills-lint
+description: Audit AI agent skills folders for problems that fail silently
+inputs:
+  paths:
+    description: 'Skills folders to scan, space-separated (default: auto-detect)'
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - run: npx skills-lint ${{ inputs.paths }}
+      shell: bash

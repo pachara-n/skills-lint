@@ -19,3 +19,11 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+
+  selftest-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./ # run this repo's own action against known-good fixtures
+        with:
+          paths: test/fixtures/valid
