@@ -5,7 +5,7 @@ import pkg from "../package.json" with { type: "json" };
 
 program
   .name("skills-lint")
-  .description("Audit AI agent skills folders for problems that fail silently")
+  .description("Check AI agent skills folders for SKILL.md problems")
   .version(pkg.version)
   .option("--format <format>", "output format: text or json", "text")
   .argument(

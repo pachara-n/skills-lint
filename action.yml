@@ -1,5 +1,5 @@
 name: skills-lint
-description: Audit AI agent skills folders for problems that fail silently
+description: Check AI agent skills folders for SKILL.md problems
 inputs:
   paths:
     description: 'Skills folders to scan, space-separated (default: auto-detect)'
