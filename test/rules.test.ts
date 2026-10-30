@@ -7,6 +7,7 @@ import { lint } from "../src/lint.js";
 import { noSkillMd } from "../src/rules/no-skill-md.js";
 import { descriptionRule, MAX_DESCRIPTION_LENGTH } from "../src/rules/description.js";
 import { shadowing } from "../src/rules/shadowing.js";
+import { reservedName } from "../src/rules/reserved-name.js";
 import { sprawled } from "../src/rules/sprawled.js";
 
 const skill = (over: Partial<SkillFolder>): SkillFolder => ({
@@ -98,5 +99,58 @@ describe("rule 4 — sprawled", () => {
 
     const { issues } = lint([home, join(tmp, "empty")]);
     expect(issues.find((i) => i.rule === "sprawled")).toBeUndefined();
+  });
+});
+
+describe("rule 5 — reserved-name", () => {
+  const claudeSynced = skill({
+    root: join("home", ".claude", "skills"),
+    path: join("home", ".claude", "skills", "synced"),
+    name: "synced",
+  });
+
+  it("flags a `synced` folder with SKILL.md inside .claude/skills", () => {
+    const issues = reservedName([claudeSynced]);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].rule).toBe("reserved-name");
+    expect(issues[0].message).toContain("reserved");
+  });
+
+  it("is case-insensitive on the folder name", () => {
+    const upper = skill({ ...claudeSynced, name: "Synced", path: "home/.claude/skills/Synced" });
+    expect(reservedName([upper])).toHaveLength(1);
+  });
+
+  it("passes `synced` in roots that are not Claude Code's", () => {
+    const agents = skill({ ...claudeSynced, root: join("home", ".agents", "skills") });
+    expect(reservedName([agents])).toHaveLength(0);
+  });
+
+  it("silently skips Claude Code's own sync folder — no SKILL.md, no issue", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "skills-lint-synced-"));
+    const root = join(tmp, ".claude", "skills");
+    mkdirSync(join(root, "synced", "acct-1", "docs"), { recursive: true });
+    writeFileSync(join(root, "synced", "acct-1", "manifest.json"), "{}");
+    writeFileSync(
+      join(root, "synced", "acct-1", "docs", "SKILL.md"),
+      '---\nname: docs\ndescription: A skill downloaded from claude.ai.\n---\n',
+    );
+
+    const report = lint([root]);
+    expect(report.skills).toHaveLength(0);
+    expect(report.issues).toEqual([]);
+  });
+
+  it("still errors when a skill is authored under the reserved name", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "skills-lint-reserved-"));
+    const root = join(tmp, ".claude", "skills");
+    mkdirSync(join(root, "Synced"), { recursive: true });
+    writeFileSync(
+      join(root, "Synced", "SKILL.md"),
+      '---\nname: Synced\ndescription: A skill under a reserved name.\n---\n',
+    );
+
+    const { issues } = lint([root]);
+    expect(issues.map((i) => i.rule)).toEqual(["reserved-name"]);
   });
 });
