@@ -3,6 +3,7 @@ import { noSkillMd } from "./rules/no-skill-md.js";
 import { descriptionRule } from "./rules/description.js";
 import { shadowing } from "./rules/shadowing.js";
 import { sprawled } from "./rules/sprawled.js";
+import { reservedName } from "./rules/reserved-name.js";
 import type { Issue } from "./types.js";
 
 export function lint(roots: string[]): { skills: SkillFolder[]; issues: Issue[] } {
@@ -14,6 +15,7 @@ export function lint(roots: string[]): { skills: SkillFolder[]; issues: Issue[] 
     ...noSkillMd(skills),
     ...descriptionRule(skills),
     ...shadowing(skills),
+    ...reservedName(skills),
     ...sprawled(activeRoots),
   ];
   return { skills, issues };

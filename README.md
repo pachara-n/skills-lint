@@ -72,6 +72,7 @@ npx skills-lint --format json
 | `description` | `SKILL.md` has no frontmatter block, or it is not closed with `---` |
 | `description` | `description` is missing, or longer than the spec limit of 1024 characters |
 | `shadowed` | The same skill name appears in more than one scanned root; the copy in the later root is reported |
+| `reserved-name` | A skill folder is named `synced` (any capitalization) inside `.claude/skills`; Claude Code reserves that name for skills downloaded from claude.ai and skips it |
 | `sprawled` *(advisory)* | Skills are spread across several scanned roots. Reported, but never fails the run |
 
 Clean folders exit quietly:
@@ -93,7 +94,7 @@ v0.2 is deliberately small, and these are known gaps. Each one has an open issue
 - **Not agent-aware yet.** All scanned roots are treated as one namespace, in scan order. Agents don't work that way: Claude Code doesn't read `.agents/skills`, Codex doesn't read `.claude/skills`, Claude Code prefers a personal skill over a project skill, and Codex lists both copies of a duplicate name. So `shadowed` between folders of different agents is usually a false positive. → [#3](https://github.com/pachara-n/skills-lint/issues/3)
 - **Messages overstate consequences.** "the skill is silently dropped" is not accurate for every agent (see [Why](#why)). → [#6](https://github.com/pachara-n/skills-lint/issues/6)
 - **Symlinked skill folders are skipped**, including the common layout where skills in `~/.claude/skills` link to `~/.agents/skills`. → [#2](https://github.com/pachara-n/skills-lint/issues/2)
-- **`~/.claude/skills/synced`** (skills synced from claude.ai) is reported as a folder without `SKILL.md`. → [#4](https://github.com/pachara-n/skills-lint/issues/4)
+- **`~/.claude/skills/synced`** (skills synced from claude.ai) is skipped when it has no `SKILL.md`, and a user-authored skill under that reserved name is reported. Its downloaded contents are not counted or inspected yet. → [#4](https://github.com/pachara-n/skills-lint/issues/4)
 - **Nested category folders** (`skills/tools/pdf/SKILL.md`), which Codex and Cursor support, are reported as folders without `SKILL.md`. → [#14](https://github.com/pachara-n/skills-lint/issues/14)
 - **Frontmatter is read as flat `key: value` lines**, not full YAML: multi-line (`>` / `|`) descriptions are not measured correctly and invalid YAML is not detected. → [#5](https://github.com/pachara-n/skills-lint/issues/5)
 - `name` and other fields are not validated yet. → [#8](https://github.com/pachara-n/skills-lint/issues/8), [#17](https://github.com/pachara-n/skills-lint/issues/17)
