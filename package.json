@@ -1,7 +1,7 @@
 {
   "name": "skills-lint",
   "version": "0.2.3",
-  "description": "Audit AI agent skills folders for problems that fail silently",
+  "description": "Check AI agent skills folders for SKILL.md problems",
   "type": "module",
   "bin": {
     "skills-lint": "dist/cli.js"

@@ -1,40 +1,46 @@
 # skills-lint
 
-> Audit your AI agent skills folders for problems that fail silently.
+> Check AI agent skills folders for `SKILL.md` problems before they reach your agent.
 
 [![CI](https://github.com/pachara-n/skills-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/pachara-n/skills-lint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/skills-lint)](https://www.npmjs.com/package/skills-lint)
 [![license](https://img.shields.io/badge/license-MIT-blue)](#license)
 
-Your AI agent (Claude Code, Codex CLI, Cursor, ZCode, …) loads skills at startup by reading each folder's `SKILL.md` frontmatter. When a skill is broken, nothing crashes — it is **silently dropped**. The folder sits on your disk; your agent never sees it.
-
-`skills-lint` scans your skills folders and reports every problem that would otherwise go unnoticed.
+Agents such as Claude Code, Codex CLI and Cursor discover skills by reading each folder's `SKILL.md` frontmatter at startup. A broken file does not crash anything, and what happens next depends on the agent: the skill may be skipped, load without its description, or simply never be picked. `skills-lint` checks skills folders for these problems so you can catch them locally or in CI.
 
 ```console
-$ npx skills-lint
+$ npx skills-lint test/fixtures/broken
 
-skills-lint: scanning 2 root(s) (auto-detected)
-  - ~/.agents/skills
-  - ~/.codex/skills
+skills-lint: scanning 1 root(s)
+  - test/fixtures/broken
 
-checked 58 skill folder(s)
+checked 3 skill folder(s)
 
-✖ Found 2 issue(s):
+✖ Found 3 issue(s):
 
-  [no-skill-md] ~/.agents/skills/pdf-tools
-        folder has no SKILL.md — this skill will never load
+  [no-skill-md] test/fixtures/broken/ghost-folder
+          folder has no SKILL.md — this skill will never load
 
-  [shadowed] ~/.codex/skills/code-review
-        "code-review" already exists in ~/.agents/skills/code-review — this copy never loads (first scanned wins)
+  [description] test/fixtures/broken/long-desc/SKILL.md
+          description is 1121 characters (max 1024) — the skill is silently dropped
+
+  [description] test/fixtures/broken/no-desc/SKILL.md
+          description is missing — the skill is silently dropped
 ```
+
+> **Status:** v0.2 checks folder structure and the `description` field against the [Agent Skills spec](https://agentskills.io/specification). It does not yet model how each agent loads skills, and some messages overstate the consequences — see [Known limitations](#known-limitations). Agent-aware checks are being built in the open: [roadmap issues](https://github.com/pachara-n/skills-lint/milestones).
 
 ## Why
 
-At startup an agent parses each `SKILL.md`, validates the frontmatter, and injects `name` + `description` into its system prompt. Fail validation and the skill is dropped — with no error and no warning, in every major implementation:
+Each agent treats a broken `SKILL.md` differently, and none of them stops you from committing one:
 
-- The [Agent Skills spec](https://agentskills.io/specification) caps `description` at **1024 characters**. Over the cap, [Codex rejects the whole skill](https://github.com/openai/codex/issues/13941) — confirmed *expected behavior* by OpenAI. Cursor runs the same validation before a skill is used.
-- Community reports: ["73% of Claude skills are silently broken"](https://www.reddit.com/r/claudeskills/comments/1tnvfh1/73_of_claude_skills_are_silently_broken_is_yours/), ["35% of your context window is gone before you type"](https://www.reddit.com/r/ClaudeAI/comments/1s41rym/35_of_your_context_window_is_gone_before_you_type/), [duplicate skills shadowing on Cursor](https://forum.cursor.com/t/critical-issue-duplicate-skills-loading-causing-context-window-waste-and-confusion/150137).
-- We reproduced it ourselves: a skill with a 1,918-character description and a skill with a misspelled `descrition:` field both vanished without a single warning.
+- **Codex** skips a skill whose `description` is empty and shows a startup warning ("Skipped loading N skill(s) due to invalid SKILL.md files").
+- **Claude Code** loads a skill whose frontmatter YAML does not parse "with no fields set", and uses the first line of the body when `description` is missing ([docs](https://code.claude.com/docs/en/skills)) — so the skill may load but never be matched to a request.
+- **Cursor** requires `name` and `description`; without a description "the agent is unlikely to pick the skill on its own" ([docs](https://cursor.com/docs/context/skills)).
+
+The [Agent Skills spec](https://agentskills.io/specification) sets the common ground: `name` and `description` are required, and `description` is at most 1024 characters. Older Codex releases rejected longer descriptions ([openai/codex#13941](https://github.com/openai/codex/issues/13941)); current releases accept them, but the limit still matters for portability.
+
+`skills-lint` runs the same checks every time, without starting an agent, so problems are caught in a pull request instead of on someone's machine.
 
 ## Usage
 
@@ -44,15 +50,15 @@ No install needed:
 npx skills-lint
 ```
 
-With no arguments it auto-detects the usual skills folders on your machine — `.agents/`, `.claude/`, `.codex/`, `.cursor/`, `.zcode/`, project-level first, then your home directory — and prints exactly what it scanned. To scan specific roots instead, pass them explicitly:
+With no arguments it looks for the usual skills folders — `.agents/`, `.claude/`, `.codex/`, `.cursor/`, `.zcode/` (each `…/skills`), in the current directory first, then your home directory — and prints exactly what it scanned. To scan specific folders instead, pass them explicitly:
 
 ```console
 npx skills-lint <path> [<path> ...]
 ```
 
-Explicit paths are the right choice in CI and for custom setups. Pass multiple roots to catch shadowing between them; sprawl across roots is reported too, but it is advisory — it never fails the run.
+**Explicit paths are recommended**, especially in CI: auto-detection scans folders that belong to different agents together, which can produce false `shadowed` findings (see [Known limitations](#known-limitations)).
 
-Machine-readable output for CI tooling:
+Machine-readable output:
 
 ```console
 npx skills-lint --format json
@@ -60,13 +66,13 @@ npx skills-lint --format json
 
 ## What it checks
 
-| Rule | Problem | Why it matters |
-| --- | --- | --- |
-| `no-skill-md` | Folder has no `SKILL.md` | The skill will never load — usually a half-deleted or half-installed skill |
-| `description` | `description` missing or over 1024 characters | Dropped at startup, silently (spec limit, enforced by Codex & Cursor) |
-| `description` | Frontmatter block missing or unterminated (`---`) | The file is not recognized as a skill at all |
-| `shadowed` | Same skill name in several scanned roots | First root wins; every later copy never loads |
-| `sprawled` *(advisory)* | Skills spread across several scanned homes | No single source of truth — pruning and updates inevitably miss one. Reported in text and json output, but never fails CI |
+| Rule | Finding |
+| --- | --- |
+| `no-skill-md` | A folder in a skills root has no `SKILL.md` |
+| `description` | `SKILL.md` has no frontmatter block, or it is not closed with `---` |
+| `description` | `description` is missing, or longer than the spec limit of 1024 characters |
+| `shadowed` | The same skill name appears in more than one scanned root; the copy in the later root is reported |
+| `sprawled` *(advisory)* | Skills are spread across several scanned roots. Reported, but never fails the run |
 
 Clean folders exit quietly:
 
@@ -80,14 +86,26 @@ checked 6 skill folder(s)
 ✔ No issues found
 ```
 
+## Known limitations
+
+v0.2 is deliberately small, and these are known gaps. Each one has an open issue:
+
+- **Not agent-aware yet.** All scanned roots are treated as one namespace, in scan order. Agents don't work that way: Claude Code doesn't read `.agents/skills`, Codex doesn't read `.claude/skills`, Claude Code prefers a personal skill over a project skill, and Codex lists both copies of a duplicate name. So `shadowed` between folders of different agents is usually a false positive. → [#3](https://github.com/pachara-n/skills-lint/issues/3)
+- **Messages overstate consequences.** "the skill is silently dropped" is not accurate for every agent (see [Why](#why)). → [#6](https://github.com/pachara-n/skills-lint/issues/6)
+- **Symlinked skill folders are skipped**, including the common layout where skills in `~/.claude/skills` link to `~/.agents/skills`. → [#2](https://github.com/pachara-n/skills-lint/issues/2)
+- **`~/.claude/skills/synced`** (skills synced from claude.ai) is reported as a folder without `SKILL.md`. → [#4](https://github.com/pachara-n/skills-lint/issues/4)
+- **Nested category folders** (`skills/tools/pdf/SKILL.md`), which Codex and Cursor support, are reported as folders without `SKILL.md`. → [#14](https://github.com/pachara-n/skills-lint/issues/14)
+- **Frontmatter is read as flat `key: value` lines**, not full YAML: multi-line (`>` / `|`) descriptions are not measured correctly and invalid YAML is not detected. → [#5](https://github.com/pachara-n/skills-lint/issues/5)
+- `name` and other fields are not validated yet. → [#8](https://github.com/pachara-n/skills-lint/issues/8), [#17](https://github.com/pachara-n/skills-lint/issues/17)
+
 ## CI
 
-Exit code is `0` when clean (or when the only findings are advisory `sprawled` warnings) and `1` when issues are found, so it drops straight into CI. As a one-line GitHub Action:
+Exit code is `0` when clean (or when the only findings are advisory `sprawled`) and `1` when issues are found. As a GitHub Action:
 
 ```yaml
 - uses: pachara-n/skills-lint@v1
   with:
-    paths: .claude/skills   # optional — auto-detects when omitted
+    paths: .claude/skills   # recommended; auto-detects when omitted
 ```
 
 Or run it directly:
@@ -103,6 +121,8 @@ npm install
 npm test        # build + unit & integration tests (fixtures in test/fixtures)
 npm run build   # bundle to dist/ via tsup
 ```
+
+Contributions are welcome — issues labelled [`good first issue`](https://github.com/pachara-n/skills-lint/labels/good%20first%20issue) have a scoped starting point.
 
 ## License
 
