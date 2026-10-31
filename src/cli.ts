@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { program } from "commander";
 import { lint } from "./lint.js";
 import { defaultRoots } from "./roots.js";
@@ -14,7 +15,7 @@ program
   )
   .action((paths: string[], options: { format: string }) => {
     const explicit = paths.length > 0;
-    const roots = explicit ? [...new Set(paths)] : defaultRoots();
+    const roots = explicit ? [...new Set(paths.map((p) => resolve(p)))] : defaultRoots();
 
     if (roots.length === 0) {
       if (options.format === "json") {
