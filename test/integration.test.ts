@@ -52,6 +52,40 @@ describe("skills-lint CLI", () => {
     expect(res.status).toBe(0);
   });
 
+  it("resolves a relative path before scanning it", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "skills-lint-relative-"));
+    const root = join(tmp, ".claude", "skills");
+    mkdirSync(join(root, "demo"), { recursive: true });
+    writeFileSync(
+      join(root, "demo", "SKILL.md"),
+      '---\nname: demo\ndescription: A valid demo skill.\n---\n\n# Demo\n',
+    );
+    mkdirSync(join(root, "synced", "42"), { recursive: true });
+
+    // `.` must resolve to the real .claude/skills root, otherwise the synced
+    // folder is reported as a skill without SKILL.md.
+    const res = spawnSync(process.execPath, [cli, "."], { encoding: "utf8", cwd: root });
+    expect(res.stdout).toContain("scanning 1 root(s)");
+    expect(res.stdout).not.toContain("[no-skill-md]");
+    expect(res.status).toBe(0);
+  });
+
+  it("dedupes a relative path and its absolute form", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "skills-lint-dedupe-"));
+    mkdirSync(join(tmp, "demo"), { recursive: true });
+    writeFileSync(
+      join(tmp, "demo", "SKILL.md"),
+      '---\nname: demo\ndescription: A valid demo skill.\n---\n\n# Demo\n',
+    );
+
+    const res = spawnSync(process.execPath, [cli, ".", tmp], {
+      encoding: "utf8",
+      cwd: tmp,
+    });
+    expect(res.stdout).toContain("scanning 1 root(s)");
+    expect(res.status).toBe(0);
+  });
+
   it("auto-detects project-level skills folders when no path is given", () => {
     const tmp = mkdtempSync(join(tmpdir(), "skills-lint-auto-"));
     mkdirSync(join(tmp, ".claude", "skills", "demo"), { recursive: true });
