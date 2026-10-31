@@ -1,4 +1,5 @@
 import { program } from "commander";
+import { resolve } from "node:path";
 import { lint } from "./lint.js";
 import { defaultRoots } from "./roots.js";
 import pkg from "../package.json" with { type: "json" };
@@ -14,7 +15,12 @@ program
   )
   .action((paths: string[], options: { format: string }) => {
     const explicit = paths.length > 0;
-    const roots = explicit ? [...new Set(paths)] : defaultRoots();
+    // Resolve before deduping: `.` and the absolute path of the same folder
+    // must scan once, and rules like the .claude/skills check need the real
+    // basename instead of ".".
+    const roots = explicit
+      ? [...new Set(paths.map((path) => resolve(path)))]
+      : defaultRoots();
 
     if (roots.length === 0) {
       if (options.format === "json") {
