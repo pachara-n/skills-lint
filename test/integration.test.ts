@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -50,6 +50,27 @@ describe("skills-lint CLI", () => {
     const res = run(join(fixtures, "valid"), join(fixtures, "valid"));
     expect(res.stdout).toContain("scanning 1 root(s)");
     expect(res.status).toBe(0);
+  });
+
+  it("dedupes relative and absolute representations of the same root", () => {
+    const valid = join(fixtures, "valid");
+    const rel = relative(process.cwd(), valid);
+    const res = run(rel, valid);
+    expect(res.stdout).toContain("scanning 1 root(s)");
+    expect(res.status).toBe(0);
+  });
+
+  it("recognizes claude skills root when scanning with relative path '.'", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "skills-lint-dot-"));
+    const skillsDir = join(tmp, ".claude", "skills");
+    mkdirSync(join(skillsDir, "synced"), { recursive: true });
+    const res = spawnSync(process.execPath, [cli, "."], {
+      encoding: "utf8",
+      cwd: skillsDir,
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).not.toContain("[no-skill-md]");
+    expect(res.stdout).toContain("No issues found");
   });
 
   it("auto-detects project-level skills folders when no path is given", () => {
