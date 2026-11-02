@@ -17,6 +17,7 @@ program
   .action((paths: string[], options: { format: string; color: boolean }) => {
     // Honor https://no-color.org: any non-empty value in process.env.NO_COLOR disables color
     const useColor =
+      Boolean(process.stdout.isTTY) &&
       options.color !== false &&
       !("NO_COLOR" in process.env && process.env.NO_COLOR !== "");
 

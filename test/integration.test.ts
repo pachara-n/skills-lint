@@ -166,7 +166,7 @@ describe("skills-lint CLI", () => {
     expect(res.stdout).not.toMatch(/\x1b\[/);
   });
 
-  it("includes ANSI color sequences by default", () => {
+  it("omits ANSI color sequences by default when output is piped (non-TTY)", () => {
     const env = { ...process.env };
     delete env.NO_COLOR;
     const res = spawnSync(process.execPath, [cli, join(fixtures, "broken")], {
@@ -174,6 +174,7 @@ describe("skills-lint CLI", () => {
       env,
     });
     expect(res.status).toBe(1);
-    expect(res.stdout).toMatch(/\x1b\[/);
+    expect(res.stdout).toContain("Found 3 issue(s)");
+    expect(res.stdout).not.toMatch(/\x1b\[/);
   });
 });
