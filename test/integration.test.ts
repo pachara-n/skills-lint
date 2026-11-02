@@ -147,4 +147,33 @@ describe("skills-lint CLI", () => {
     expect(report.issues).toEqual([]);
     expect(res.stderr).toContain("No skills folders found");
   });
+  it("omits ANSI color sequences when NO_COLOR is set", () => {
+    const res = spawnSync(process.execPath, [cli, join(fixtures, "broken")], {
+      encoding: "utf8",
+      env: { ...process.env, NO_COLOR: "1" },
+    });
+    expect(res.status).toBe(1);
+    expect(res.stdout).toContain("Found 3 issue(s)");
+    expect(res.stdout).not.toMatch(/\x1b\[/);
+  });
+
+  it("omits ANSI color sequences when --no-color flag is passed", () => {
+    const res = spawnSync(process.execPath, [cli, join(fixtures, "broken"), "--no-color"], {
+      encoding: "utf8",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stdout).toContain("Found 3 issue(s)");
+    expect(res.stdout).not.toMatch(/\x1b\[/);
+  });
+
+  it("includes ANSI color sequences by default", () => {
+    const env = { ...process.env };
+    delete env.NO_COLOR;
+    const res = spawnSync(process.execPath, [cli, join(fixtures, "broken")], {
+      encoding: "utf8",
+      env,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stdout).toMatch(/\x1b\[/);
+  });
 });
