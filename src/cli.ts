@@ -9,11 +9,20 @@ program
   .description("Check AI agent skills folders for SKILL.md problems")
   .version(pkg.version)
   .option("--format <format>", "output format: text or json", "text")
+  .option("--no-color", "disable colored output")
   .argument(
     "[paths...]",
     "skills folders to scan (default: auto-detect the usual locations)",
   )
-  .action((paths: string[], options: { format: string }) => {
+  .action((paths: string[], options: { format: string; color: boolean }) => {
+    // Honor https://no-color.org: any non-empty value in process.env.NO_COLOR disables color
+    const useColor =
+      options.color !== false &&
+      !("NO_COLOR" in process.env && process.env.NO_COLOR !== "");
+
+    const style = (text: string, open: string = "", close: string = "\x1b[0m"): string =>
+      useColor && open ? `${open}${text}${close}` : text;
+
     const explicit = paths.length > 0;
     // Resolve before deduping: `.` and the absolute path of the same folder
     // must scan once, and rules like the .claude/skills check need the real
@@ -52,9 +61,9 @@ program
       console.log(`\nchecked ${skills.length} skill folder(s)\n`);
 
       if (issues.length === 0) {
-        console.log("✔ No issues found");
+        console.log(`${style("✔", "\x1b[32m")} No issues found`);
       } else {
-        console.log(`✖ Found ${issues.length} issue(s):\n`);
+        console.log(`${style("✖", "\x1b[31m")} Found ${issues.length} issue(s):\n`);
         for (const issue of issues) {
           console.log(`  [${issue.rule}] ${issue.path}`);
           console.log(`          ${issue.message}\n`);
