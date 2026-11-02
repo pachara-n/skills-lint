@@ -123,7 +123,7 @@ npm test        # build + unit & integration tests (fixtures in test/fixtures)
 npm run build   # bundle to dist/ via tsup
 ```
 
-Contributions are welcome — issues labelled [`good first issue`](https://github.com/pachara-n/skills-lint/labels/good%20first%20issue) have a scoped starting point.
+Contributions are welcome — read [CONTRIBUTING.md](CONTRIBUTING.md) first (claim an issue before you start). Issues labelled [`good first issue`](https://github.com/pachara-n/skills-lint/labels/good%20first%20issue) have a scoped starting point.
 
 ## License
 
