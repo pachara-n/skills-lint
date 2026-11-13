@@ -1,7 +1,8 @@
 import type { SkillFolder } from "../scan.js";
 import type { Issue } from "../types.js";
+import { FACTS } from "../agents.js";
 
-export const MAX_DESCRIPTION_LENGTH = 1024;
+export const MAX_DESCRIPTION_LENGTH = FACTS["spec.descriptionMaxLength"].value;
 
 /** Rule 2: description missing or longer than the spec limit gets the skill silently dropped. */
 export function descriptionRule(skills: SkillFolder[]): Issue[] {
@@ -15,6 +16,7 @@ export function descriptionRule(skills: SkillFolder[]): Issue[] {
         severity: "error",
         path: skill.skillMdPath,
         line: 1,
+        facts: ["spec.requiredFields"],
         message: "SKILL.md has no valid frontmatter block (missing or unterminated ---)",
       });
       continue;
@@ -27,6 +29,7 @@ export function descriptionRule(skills: SkillFolder[]): Issue[] {
         severity: "error",
         path: skill.skillMdPath,
         line: 1, // no description key to point at — point at the frontmatter block
+        facts: ["spec.requiredFields"],
         message: "description is missing — the skill is silently dropped",
       });
     } else if (description.length > MAX_DESCRIPTION_LENGTH) {
@@ -35,6 +38,7 @@ export function descriptionRule(skills: SkillFolder[]): Issue[] {
         severity: "error",
         path: skill.skillMdPath,
         line: skill.frontmatter.lines?.["description"] ?? 1,
+        facts: ["spec.descriptionMaxLength"],
         message: `description is ${description.length} characters (max ${MAX_DESCRIPTION_LENGTH}) — the skill is silently dropped`,
       });
     }
