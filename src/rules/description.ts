@@ -12,7 +12,9 @@ export function descriptionRule(skills: SkillFolder[]): Issue[] {
     if (skill.frontmatter === null) {
       issues.push({
         rule: "description",
+        severity: "error",
         path: skill.skillMdPath,
+        line: 1,
         message: "SKILL.md has no valid frontmatter block (missing or unterminated ---)",
       });
       continue;
@@ -22,13 +24,17 @@ export function descriptionRule(skills: SkillFolder[]): Issue[] {
     if (description === "") {
       issues.push({
         rule: "description",
+        severity: "error",
         path: skill.skillMdPath,
+        line: 1, // no description key to point at — point at the frontmatter block
         message: "description is missing — the skill is silently dropped",
       });
     } else if (description.length > MAX_DESCRIPTION_LENGTH) {
       issues.push({
         rule: "description",
+        severity: "error",
         path: skill.skillMdPath,
+        line: skill.frontmatter.lines?.["description"] ?? 1,
         message: `description is ${description.length} characters (max ${MAX_DESCRIPTION_LENGTH}) — the skill is silently dropped`,
       });
     }
