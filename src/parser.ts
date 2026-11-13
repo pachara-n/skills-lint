@@ -1,6 +1,8 @@
 export interface Frontmatter {
   name: string;
   description: string;
+  /** 1-based file line of each key found in the block. */
+  lines?: Record<string, number>;
 }
 
 /**
@@ -17,7 +19,9 @@ export function parseFrontmatter(content: string): Frontmatter | null {
   if (end === -1) return null;
 
   const fields: Record<string, string> = {};
-  for (const line of lines.slice(1, end)) {
+  const keyLines: Record<string, number> = {};
+  for (let i = 1; i < end; i++) {
+    const line = lines[i];
     const colon = line.indexOf(":"); // first colon only — values may contain URLs
     if (colon === -1) continue;
     const key = line.slice(0, colon).trim();
@@ -25,8 +29,15 @@ export function parseFrontmatter(content: string): Frontmatter | null {
       .slice(colon + 1)
       .trim()
       .replace(/^"(.*)"$/, "$1");
-    if (key !== "") fields[key] = value;
+    if (key !== "") {
+      fields[key] = value;
+      keyLines[key] = i + 1; // lines[0] is the opening --- on line 1
+    }
   }
 
-  return { name: fields["name"] ?? "", description: fields["description"] ?? "" };
+  return {
+    name: fields["name"] ?? "",
+    description: fields["description"] ?? "",
+    lines: keyLines,
+  };
 }

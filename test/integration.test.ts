@@ -177,4 +177,65 @@ describe("skills-lint CLI", () => {
     expect(res.stdout).toContain("Found 3 issue(s)");
     expect(res.stdout).not.toMatch(/\x1b\[/);
   });
+
+  it("exits 0 when the only findings are warnings and prints a summary", () => {
+    const res = run(join(fixtures, "valid"), join(fixtures, "valid-b"), "--format", "json");
+    expect(res.status).toBe(0);
+    const report = JSON.parse(res.stdout) as {
+      issues: { rule: string; severity: string }[];
+      summary: { errors: number; warnings: number };
+    };
+    expect(report.issues).toEqual([expect.objectContaining({ rule: "sprawled", severity: "warning" })]);
+    expect(report.summary).toEqual({ errors: 0, warnings: 1 });
+
+    const text = run(join(fixtures, "valid"), join(fixtures, "valid-b"));
+    expect(text.stdout).toContain("0 errors, 1 warning");
+  });
+
+  it("adds severity, line and a summary to json output", () => {
+    const res = run(join(fixtures, "broken"), "--format", "json");
+    const report = JSON.parse(res.stdout) as {
+      issues: { rule: string; path: string; severity: string; line?: number }[];
+      summary: { errors: number; warnings: number };
+    };
+    expect(report.summary).toEqual({ errors: 3, warnings: 0 });
+    expect(report.issues.every((i) => i.severity === "error")).toBe(true);
+    const long = report.issues.find((i) => i.path.includes("long-desc"));
+    expect(long?.line).toBe(3);
+    const ghost = report.issues.find((i) => i.rule === "no-skill-md");
+    expect(ghost && "line" in ghost).toBe(false);
+  });
+
+  it("prints path:line in text output when the line is known", () => {
+    const res = run(join(fixtures, "broken"));
+    expect(res.stdout).toContain(join("long-desc", "SKILL.md") + ":3");
+    expect(res.stdout).toContain("3 errors, 0 warnings");
+  });
+
+  it("--ignore removes a rule from text and json output", () => {
+    const json = run(join(fixtures, "broken"), "--ignore", "description", "--format", "json");
+    const report = JSON.parse(json.stdout) as {
+      issues: { rule: string }[];
+      summary: { errors: number };
+    };
+    expect(report.issues.map((i) => i.rule)).toEqual(["no-skill-md"]);
+    expect(report.summary.errors).toBe(1);
+
+    const text = run(join(fixtures, "broken"), "--ignore", "description");
+    expect(text.stdout).not.toContain("[description]");
+    expect(text.stdout).toContain("[no-skill-md]");
+  });
+
+  it("--ignore can be repeated and a clean result exits 0", () => {
+    const res = run(join(fixtures, "broken"), "--ignore", "description", "--ignore", "no-skill-md");
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain("No issues found");
+  });
+
+  it("--ignore rejects an unknown rule and lists the valid ones", () => {
+    const res = run(join(fixtures, "valid"), "--ignore", "shadow");
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('Unknown rule "shadow"');
+    expect(res.stderr).toContain("shadowed");
+  });
 });

@@ -26,6 +26,7 @@ describe("parseFrontmatter", () => {
     expect(parseFrontmatter(good)).toEqual({
       name: "teach",
       description: "Teach the user a topic step by step.",
+      lines: { name: 2, description: 3 },
     });
   });
 
@@ -47,6 +48,7 @@ describe("parseFrontmatter", () => {
     expect(parseFrontmatter("---\nname: x\n---\n")).toEqual({
       name: "x",
       description: "",
+      lines: { name: 2 },
     });
   });
 
@@ -54,6 +56,12 @@ describe("parseFrontmatter", () => {
     expect(parseFrontmatter('---\nname: x\ndescription: "quoted"\n---\n')).toEqual({
       name: "x",
       description: "quoted",
+      lines: { name: 2, description: 3 },
     });
+  });
+
+  it("records the 1-based file line of each key", () => {
+    const parsed = parseFrontmatter("---\n# comment\nname: x\n\ndescription: d\n---\n");
+    expect(parsed?.lines).toEqual({ name: 3, description: 5 });
   });
 });

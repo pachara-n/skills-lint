@@ -6,6 +6,7 @@ export function sprawled(roots: string[]): Issue[] {
   return [
     {
       rule: "sprawled",
+      severity: "warning",
       path: roots.join(", "),
       message: `skills are spread across ${roots.length} homes — consider a single source of truth`,
     },

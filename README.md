@@ -64,16 +64,43 @@ Machine-readable output:
 npx skills-lint --format json
 ```
 
+The JSON report has this shape. `line` is present only when a finding points into a file (1-based):
+
+```json
+{
+  "roots": ["/abs/path/.claude/skills"],
+  "skillsChecked": 3,
+  "issues": [
+    {
+      "rule": "description",
+      "severity": "error",
+      "path": "/abs/path/.claude/skills/pdf/SKILL.md",
+      "line": 3,
+      "message": "description is 1121 characters (max 1024) — the skill is silently dropped"
+    }
+  ],
+  "summary": { "errors": 1, "warnings": 0 }
+}
+```
+
+To switch a rule off, pass `--ignore <rule>` (repeatable). An unknown rule name is an error, so a typo cannot silently keep a rule on:
+
+```console
+npx skills-lint .claude/skills --ignore sprawled --ignore shadowed
+```
+
 ## What it checks
 
-| Rule | Finding |
-| --- | --- |
-| `no-skill-md` | A folder in a skills root has no `SKILL.md` |
-| `description` | `SKILL.md` has no frontmatter block, or it is not closed with `---` |
-| `description` | `description` is missing, or longer than the spec limit of 1024 characters |
-| `shadowed` | The same skill name appears in more than one scanned root; the copy in the later root is reported |
-| `reserved-name` | A skill folder is named `synced` (any capitalization) inside `.claude/skills`; Claude Code reserves that name for skills downloaded from claude.ai and skips it |
-| `sprawled` *(advisory)* | Skills are spread across several scanned roots. Reported, but never fails the run |
+Each finding has a severity. **Errors** fail the run; **warnings** are reported but never fail it.
+
+| Rule | Severity | Finding |
+| --- | --- | --- |
+| `no-skill-md` | error | A folder in a skills root has no `SKILL.md` |
+| `description` | error | `SKILL.md` has no frontmatter block, or it is not closed with `---` |
+| `description` | error | `description` is missing, or longer than the spec limit of 1024 characters |
+| `shadowed` | error | The same skill name appears in more than one scanned root; the copy in the later root is reported |
+| `reserved-name` | error | A skill folder is named `synced` (any capitalization) inside `.claude/skills`; Claude Code reserves that name for skills downloaded from claude.ai and skips it |
+| `sprawled` | warning | Skills are spread across several scanned roots |
 
 Clean folders exit quietly:
 
@@ -101,7 +128,7 @@ v0.2 is deliberately small, and these are known gaps. Each one has an open issue
 
 ## CI
 
-Exit code is `0` when clean (or when the only findings are advisory `sprawled`) and `1` when issues are found. As a GitHub Action:
+Exit code is `1` when at least one error is found and `0` otherwise (a run with only warnings passes). As a GitHub Action:
 
 ```yaml
 - uses: pachara-n/skills-lint@v1

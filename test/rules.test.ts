@@ -154,3 +154,34 @@ describe("rule 5 — reserved-name", () => {
     expect(issues.map((i) => i.rule)).toEqual(["reserved-name"]);
   });
 });
+
+describe("severity and line", () => {
+  it("reports hard failures as errors", () => {
+    const issues = [
+      ...noSkillMd([skill({ hasSkillMd: false, frontmatter: null })]),
+      ...descriptionRule([skill({ frontmatter: { name: "x", description: "" } })]),
+    ];
+    expect(issues.map((i) => i.severity)).toEqual(["error", "error"]);
+  });
+
+  it("reports sprawled as a warning", () => {
+    expect(sprawled(["a", "b"])[0].severity).toBe("warning");
+  });
+
+  it("points a description finding at the description line", () => {
+    const long = "a".repeat(MAX_DESCRIPTION_LENGTH + 1);
+    const issues = descriptionRule([
+      skill({ frontmatter: { name: "x", description: long, lines: { name: 2, description: 4 } } }),
+    ]);
+    expect(issues[0].line).toBe(4);
+  });
+
+  it("points a missing description or frontmatter at line 1", () => {
+    expect(descriptionRule([skill({ frontmatter: { name: "x", description: "" } })])[0].line).toBe(1);
+    expect(descriptionRule([skill({ frontmatter: null })])[0].line).toBe(1);
+  });
+
+  it("leaves line unset for folder-level findings", () => {
+    expect(noSkillMd([skill({ hasSkillMd: false, frontmatter: null })])[0].line).toBeUndefined();
+  });
+});

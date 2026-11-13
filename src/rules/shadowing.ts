@@ -19,6 +19,7 @@ export function shadowing(skills: SkillFolder[]): Issue[] {
     if (first) {
       issues.push({
         rule: "shadowed",
+        severity: "error",
         path: skill.path,
         message: `"${name}" already exists in ${first.path} — this copy never loads (first scanned wins)`,
       });

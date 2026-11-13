@@ -2,7 +2,11 @@ import { program } from "commander";
 import { resolve } from "node:path";
 import { lint } from "./lint.js";
 import { defaultRoots } from "./roots.js";
+import { RULE_IDS, type Issue, type RuleId } from "./types.js";
 import pkg from "../package.json" with { type: "json" };
+
+const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
+const location = (issue: Issue): string => (issue.line ? `${issue.path}:${issue.line}` : issue.path);
 
 program
   .name("skills-lint")
@@ -10,11 +14,28 @@ program
   .version(pkg.version)
   .option("--format <format>", "output format: text or json", "text")
   .option("--no-color", "disable colored output")
+  .option(
+    "--ignore <rule>",
+    `skip a rule; repeatable (rules: ${RULE_IDS.join(", ")})`,
+    (rule: string, previous: string[]) => [...previous, rule],
+    [] as string[],
+  )
   .argument(
     "[paths...]",
     "skills folders to scan (default: auto-detect the usual locations)",
   )
-  .action((paths: string[], options: { format: string; color: boolean }) => {
+  .action((paths: string[], options: { format: string; color: boolean; ignore: string[] }) => {
+    // A misspelled rule would otherwise look like it was ignored while still
+    // failing (or silently passing) the run, so reject it up front.
+    const unknown = options.ignore.filter((rule) => !(RULE_IDS as readonly string[]).includes(rule));
+    if (unknown.length > 0) {
+      for (const rule of unknown) console.error(`Unknown rule "${rule}" in --ignore`);
+      console.error(`Valid rules: ${RULE_IDS.join(", ")}`);
+      process.exitCode = 1;
+      return;
+    }
+    const ignored = new Set(options.ignore as RuleId[]);
+
     // Honor https://no-color.org: any non-empty value in process.env.NO_COLOR disables color
     const useColor =
       Boolean(process.stdout.isTTY) &&
@@ -35,7 +56,11 @@ program
     if (roots.length === 0) {
       if (options.format === "json") {
         console.log(
-          JSON.stringify({ roots: [], skillsChecked: 0, issues: [] }, null, 2),
+          JSON.stringify(
+            { roots: [], skillsChecked: 0, issues: [], summary: { errors: 0, warnings: 0 } },
+            null,
+            2,
+          ),
         );
       }
       console.error("No skills folders found in the usual locations.");
@@ -44,11 +69,15 @@ program
       return;
     }
 
-    const { skills, issues } = lint(roots);
+    const result = lint(roots);
+    const skills = result.skills;
+    const issues = result.issues.filter((issue) => !ignored.has(issue.rule));
+    const errors = issues.filter((issue) => issue.severity === "error").length;
+    const summary = { errors, warnings: issues.length - errors };
 
     if (options.format === "json") {
       console.log(
-        JSON.stringify({ roots, skillsChecked: skills.length, issues }, null, 2),
+        JSON.stringify({ roots, skillsChecked: skills.length, issues, summary }, null, 2),
       );
     } else if (options.format !== "text") {
       console.error(`Unknown format: ${options.format} (use "text" or "json")`);
@@ -64,16 +93,18 @@ program
       if (issues.length === 0) {
         console.log(`${style("✔", "\x1b[32m")} No issues found`);
       } else {
-        console.log(`${style("✖", "\x1b[31m")} Found ${issues.length} issue(s):\n`);
+        console.log(`Found ${issues.length} issue(s):\n`);
         for (const issue of issues) {
-          console.log(`  [${issue.rule}] ${issue.path}`);
+          const mark =
+            issue.severity === "error" ? style("✖", "\x1b[31m") : style("⚠", "\x1b[33m");
+          console.log(`  ${mark} [${issue.rule}] ${location(issue)}`);
           console.log(`          ${issue.message}\n`);
         }
+        console.log(`${plural(summary.errors, "error")}, ${plural(summary.warnings, "warning")}`);
       }
     }
-    // sprawled is advisory: reported in text and json, but only hard
-    // issues fail the run (multi-root scans are a legitimate setup)
-    if (issues.some((i) => i.rule !== "sprawled")) process.exitCode = 1;
+    // only errors fail the run; warnings are reported but advisory
+    if (summary.errors > 0) process.exitCode = 1;
   });
 
 program.parse();
