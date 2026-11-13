@@ -238,4 +238,27 @@ describe("skills-lint CLI", () => {
     expect(res.stderr).toContain('Unknown rule "shadow"');
     expect(res.stderr).toContain("shadowed");
   });
+
+  it("reports frontmatter problems with their SKILL.md line", () => {
+    const root = join(mkdtempSync(join(tmpdir(), "skills-lint-yaml-")), ".agents", "skills");
+    mkdirSync(join(root, "aws"), { recursive: true });
+    writeFileSync(
+      join(root, "aws", "SKILL.md"),
+      "\uFEFF---\nname: aws\ndescription: Build for AWS: ECS\n---\n\n# AWS\n",
+    );
+    const res = run(root, "--format", "json");
+    expect(res.status).toBe(1);
+    const report = JSON.parse(res.stdout) as {
+      issues: { rule: string; severity: string; line?: number; message: string }[];
+    };
+    expect(report.issues.map((i) => [i.rule, i.severity, i.line])).toEqual([
+      ["frontmatter", "error", 1],
+      ["frontmatter", "error", 3],
+    ]);
+    expect(report.issues[0].message).toContain("BOM");
+    expect(report.issues[1].message).toContain("unquoted");
+
+    const text = run(root, "--ignore", "frontmatter");
+    expect(text.status).toBe(0);
+  });
 });

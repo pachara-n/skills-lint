@@ -9,6 +9,12 @@ import { descriptionRule, MAX_DESCRIPTION_LENGTH } from "../src/rules/descriptio
 import { shadowing } from "../src/rules/shadowing.js";
 import { reservedName } from "../src/rules/reserved-name.js";
 import { sprawled } from "../src/rules/sprawled.js";
+import { frontmatterRule } from "../src/rules/frontmatter.js";
+import { parseFrontmatter } from "../src/parser.js";
+
+/** Frontmatter as the parser returns it for a SKILL.md with these fields. */
+const fm = (name: string, description: string) =>
+  parseFrontmatter(`---\nname: ${name}\ndescription: ${JSON.stringify(description)}\n---\n`);
 
 const skill = (over: Partial<SkillFolder>): SkillFolder => ({
   root: "r",
@@ -16,7 +22,7 @@ const skill = (over: Partial<SkillFolder>): SkillFolder => ({
   name: "x",
   skillMdPath: "r/x/SKILL.md",
   hasSkillMd: true,
-  frontmatter: { name: "x", description: "fine" },
+  frontmatter: fm("x", "fine"),
   ...over,
 });
 
@@ -34,22 +40,30 @@ describe("rule 1 — no-skill-md", () => {
 
 describe("rule 2 — description", () => {
   it("flags a missing description", () => {
-    const issues = descriptionRule([skill({ frontmatter: { name: "x", description: "" } })]);
+    const issues = descriptionRule([skill({ frontmatter: fm("x", "") })]);
     expect(issues).toHaveLength(1);
     expect(issues[0].message).toContain("missing");
   });
 
   it("flags a description over 1024 characters", () => {
     const long = "a".repeat(MAX_DESCRIPTION_LENGTH + 1);
-    const issues = descriptionRule([skill({ frontmatter: { name: "x", description: long } })]);
+    const issues = descriptionRule([skill({ frontmatter: fm("x", long) })]);
     expect(issues).toHaveLength(1);
     expect(issues[0].message).toContain("1025 characters");
   });
 
-  it("flags an unparseable frontmatter block", () => {
-    const issues = descriptionRule([skill({ frontmatter: null })]);
+  it("flags a description that is not text", () => {
+    const issues = descriptionRule([
+      skill({ frontmatter: parseFrontmatter("---\nname: x\ndescription: [a, b]\n---\n") }),
+    ]);
     expect(issues).toHaveLength(1);
-    expect(issues[0].message).toContain("no valid frontmatter");
+    expect(issues[0].message).toContain("not a list");
+    expect(issues[0].line).toBe(3);
+  });
+
+  it("leaves a broken frontmatter block to the frontmatter rule", () => {
+    const broken = parseFrontmatter("---\nname: x\n");
+    expect(descriptionRule([skill({ frontmatter: broken })])).toHaveLength(0);
   });
 
   it("passes a good description", () => {
@@ -58,8 +72,8 @@ describe("rule 2 — description", () => {
 });
 
 describe("rule 3 — shadowing", () => {
-  const a = skill({ name: "dup", path: "root-a/dup", frontmatter: { name: "dup", description: "a" } });
-  const b = skill({ name: "dup", path: "root-b/dup", frontmatter: { name: "dup", description: "b" } });
+  const a = skill({ name: "dup", path: "root-a/dup", frontmatter: fm("dup", "a") });
+  const b = skill({ name: "dup", path: "root-b/dup", frontmatter: fm("dup", "b") });
 
   it("flags the later copy and keeps the first", () => {
     const issues = shadowing([a, b]);
@@ -69,7 +83,7 @@ describe("rule 3 — shadowing", () => {
   });
 
   it("is case-insensitive on names", () => {
-    const upper = skill({ path: "root-b/DUP", frontmatter: { name: "DUP", description: "b" } });
+    const upper = skill({ path: "root-b/DUP", frontmatter: fm("DUP", "b") });
     expect(shadowing([a, upper])).toHaveLength(1);
   });
 
@@ -159,7 +173,7 @@ describe("severity and line", () => {
   it("reports hard failures as errors", () => {
     const issues = [
       ...noSkillMd([skill({ hasSkillMd: false, frontmatter: null })]),
-      ...descriptionRule([skill({ frontmatter: { name: "x", description: "" } })]),
+      ...descriptionRule([skill({ frontmatter: fm("x", "") })]),
     ];
     expect(issues.map((i) => i.severity)).toEqual(["error", "error"]);
   });
@@ -170,18 +184,77 @@ describe("severity and line", () => {
 
   it("points a description finding at the description line", () => {
     const long = "a".repeat(MAX_DESCRIPTION_LENGTH + 1);
-    const issues = descriptionRule([
-      skill({ frontmatter: { name: "x", description: long, lines: { name: 2, description: 4 } } }),
-    ]);
+    const content = ["---", "name: x", "# note", `description: ${long}`, "---", ""].join("\n");
+    const issues = descriptionRule([skill({ frontmatter: parseFrontmatter(content) })]);
     expect(issues[0].line).toBe(4);
   });
 
-  it("points a missing description or frontmatter at line 1", () => {
-    expect(descriptionRule([skill({ frontmatter: { name: "x", description: "" } })])[0].line).toBe(1);
-    expect(descriptionRule([skill({ frontmatter: null })])[0].line).toBe(1);
+  it("points a missing description at line 1", () => {
+    expect(descriptionRule([skill({ frontmatter: fm("x", "") })])[0].line).toBe(1);
   });
 
   it("leaves line unset for folder-level findings", () => {
     expect(noSkillMd([skill({ hasSkillMd: false, frontmatter: null })])[0].line).toBeUndefined();
+  });
+});
+
+describe("rule — frontmatter", () => {
+  const md = (...lines: string[]) => [...lines, ""].join("\n");
+  const BOM = String.fromCharCode(0xfeff);
+  const withContent = (content: string, root = "r") =>
+    skill({ root, frontmatter: parseFrontmatter(content) });
+
+  it("passes a valid block", () => {
+    expect(frontmatterRule([skill({})])).toHaveLength(0);
+  });
+
+  it("skips folders without SKILL.md", () => {
+    expect(frontmatterRule([skill({ hasSkillMd: false, frontmatter: null })])).toHaveLength(0);
+  });
+
+  it.each([
+    ["missing", md("# no frontmatter"), "first line"],
+    ["unterminated", md("---", "name: x"), "not closed"],
+    ["not a mapping", md("---", "- a", "---"), "key: value"],
+  ])("errors on a %s block", (_label, content, text) => {
+    const [issue] = frontmatterRule([withContent(content)]);
+    expect(issue.rule).toBe("frontmatter");
+    expect(issue.severity).toBe("error");
+    expect(issue.message).toContain(text);
+  });
+
+  it("errors on invalid YAML with the parser message and line", () => {
+    const [issue] = frontmatterRule([withContent(md("---", "name: x", "name: y", "---"))]);
+    expect(issue.severity).toBe("error");
+    expect(issue.line).toBe(3);
+    expect(issue.message).toContain("not valid YAML");
+  });
+
+  it("explains an unquoted colon and what each agent does", () => {
+    const [issue] = frontmatterRule([
+      withContent(md("---", "name: aws", "description: Build for AWS: ECS", "---")),
+    ]);
+    expect(issue.line).toBe(3);
+    expect(issue.message).toContain("quotes");
+    expect(issue.message).toContain("Claude Code");
+    expect(issue.message).toContain("Codex repairs it");
+    expect(issue.facts).toEqual(["claude.yamlError", "codex.unquotedColon"]);
+  });
+
+  it("makes a BOM an error in folders Codex reads", () => {
+    const content = BOM + md("---", "name: x", "description: d", "---");
+    for (const root of [join("p", ".agents", "skills"), join("home", ".codex", "skills")]) {
+      const [issue] = frontmatterRule([withContent(content, root)]);
+      expect(issue.severity, root).toBe("error");
+      expect(issue.message).toContain("BOM");
+    }
+  });
+
+  it("makes a BOM a warning elsewhere, and still checks the description", () => {
+    const s = withContent(BOM + md("---", "name: x", "---"), join("p", ".claude", "skills"));
+    expect(frontmatterRule([s]).map((i) => i.severity)).toEqual(["warning"]);
+    expect(descriptionRule([s]).map((i) => i.message)).toEqual([
+      expect.stringContaining("missing"),
+    ]);
   });
 });

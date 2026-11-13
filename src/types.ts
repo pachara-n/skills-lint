@@ -2,6 +2,7 @@ import type { FactId } from "./agents.js";
 
 export const RULE_IDS = [
   "no-skill-md",
+  "frontmatter",
   "description",
   "shadowed",
   "sprawled",

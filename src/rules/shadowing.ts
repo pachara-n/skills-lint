@@ -12,7 +12,7 @@ export function shadowing(skills: SkillFolder[]): Issue[] {
   for (const skill of skills) {
     if (!skill.hasSkillMd) continue; // nothing to shadow — the skill does not load anyway
     // agents route by the frontmatter name and fall back to the folder name
-    const name = skill.frontmatter?.name || skill.name;
+    const name = (skill.frontmatter?.ok && skill.frontmatter.name) || skill.name;
     const key = name.toLowerCase();
 
     const first = firstSeen.get(key);
