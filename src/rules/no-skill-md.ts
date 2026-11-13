@@ -8,6 +8,7 @@ export function noSkillMd(skills: SkillFolder[]): Issue[] {
     .map((skill) => ({
       rule: "no-skill-md" as const,
       severity: "error" as const,
+      facts: ["spec.skillFile" as const],
       path: skill.path,
       message: "folder has no SKILL.md — this skill will never load",
     }));

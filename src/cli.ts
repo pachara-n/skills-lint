@@ -2,6 +2,7 @@ import { program } from "commander";
 import { resolve } from "node:path";
 import { lint } from "./lint.js";
 import { defaultRoots } from "./roots.js";
+import { renderFactsJson, renderFactsMarkdown, renderFactsText } from "./facts-render.js";
 import { RULE_IDS, type Issue, type RuleId } from "./types.js";
 import pkg from "../package.json" with { type: "json" };
 
@@ -12,7 +13,8 @@ program
   .name("skills-lint")
   .description("Check AI agent skills folders for SKILL.md problems")
   .version(pkg.version)
-  .option("--format <format>", "output format: text or json", "text")
+  .option("--format <format>", "output format: text or json (markdown with --facts)", "text")
+  .option("--facts", "print what skills-lint assumes about each agent, with sources, and exit")
   .option("--no-color", "disable colored output")
   .option(
     "--ignore <rule>",
@@ -24,7 +26,20 @@ program
     "[paths...]",
     "skills folders to scan (default: auto-detect the usual locations)",
   )
-  .action((paths: string[], options: { format: string; color: boolean; ignore: string[] }) => {
+  .action((paths: string[], options: { format: string; color: boolean; ignore: string[]; facts?: boolean }) => {
+    if (options.facts) {
+      const render = { text: renderFactsText, json: renderFactsJson, markdown: renderFactsMarkdown }[
+        options.format
+      ];
+      if (!render) {
+        console.error(`Unknown format: ${options.format} (use "text", "json" or "markdown")`);
+        process.exitCode = 1;
+        return;
+      }
+      console.log(render());
+      return;
+    }
+
     // A misspelled rule would otherwise look like it was ignored while still
     // failing (or silently passing) the run, so reject it up front.
     const unknown = options.ignore.filter((rule) => !(RULE_IDS as readonly string[]).includes(rule));

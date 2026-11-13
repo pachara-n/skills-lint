@@ -13,6 +13,7 @@ export function reservedName(skills: SkillFolder[]): Issue[] {
     .map((skill) => ({
       rule: "reserved-name" as const,
       severity: "error" as const,
+      facts: ["claude.syncedFolder" as const],
       path: skill.path,
       message:
         "folder name is reserved by Claude Code for skills downloaded from claude.ai — this skill is skipped",

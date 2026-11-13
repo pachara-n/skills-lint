@@ -38,6 +38,15 @@ The PR that was opened first and is correct with passing CI is merged; the other
 
 **Every claim about an agent needs a source.** skills-lint's value is knowing how Claude Code, Codex, Cursor and others load skills, and those rules change between releases. Any message, rule or doc that states what an agent does must link to its source (a documentation page, or a file and commit in the agent's repository) and say when you checked it. If something is not documented, say so instead of guessing.
 
+All agent facts live in one table, [`src/agents.ts`](src/agents.ts). Rules and messages read from it instead of hard-coding agent behavior; a finding lists the fact ids it relies on in `facts`. After changing the table, run `npm run docs` to regenerate the README section (a test fails when they differ).
+
+**Re-verify facts before every minor release.** For each entry in `src/agents.ts`:
+
+- [ ] Open its `source`. For repository files, compare the pinned commit with the current default branch.
+- [ ] If the behavior still holds, update `checked` to today. If it changed, update `summary`, `value` and `source` (new commit), set `agentVersion` when known, and fix any rule that depends on it.
+- [ ] If no source documents the behavior any more, set `value` to `UNKNOWN` and say so in `summary`.
+- [ ] Run `npm run docs` and `npm test`.
+
 **The README describes only what is shipped.** If your change fixes something listed under [Known limitations](README.md#known-limitations), update or remove that entry in the same PR.
 
 ## Reporting a bug

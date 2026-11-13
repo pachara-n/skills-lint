@@ -1,3 +1,5 @@
+import type { FactId } from "./agents.js";
+
 export const RULE_IDS = [
   "no-skill-md",
   "description",
@@ -17,4 +19,6 @@ export interface Issue {
   path: string;
   line?: number; // 1-based line in `path`, when the finding points into a file
   message: string;
+  /** Ids in the agents.ts facts table that this finding's claim relies on. */
+  facts?: FactId[];
 }

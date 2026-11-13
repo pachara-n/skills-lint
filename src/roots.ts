@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { FACTS, SCAN_DIRS } from "./agents.js";
 
-const AGENT_DIRS = [".agents", ".claude", ".codex", ".cursor", ".zcode"];
+const [CLAUDE_DIR, CLAUDE_SKILLS] = FACTS["claude.projectRoots"].value.dirs[0].split("/");
 
 /**
  * True when `root` is a Claude Code skills folder (`.claude/skills`), project
@@ -11,8 +12,8 @@ const AGENT_DIRS = [".agents", ".claude", ".codex", ".cursor", ".zcode"];
  */
 export function isClaudeSkillsRoot(root: string): boolean {
   return (
-    basename(root).toLowerCase() === "skills" &&
-    basename(dirname(root)).toLowerCase() === ".claude"
+    basename(root).toLowerCase() === CLAUDE_SKILLS &&
+    basename(dirname(root)).toLowerCase() === CLAUDE_DIR
   );
 }
 
@@ -24,8 +25,8 @@ export function isClaudeSkillsRoot(root: string): boolean {
  */
 export function defaultRoots(cwd: string = process.cwd(), home: string = homedir()): string[] {
   const candidates = [
-    ...AGENT_DIRS.map((dir) => join(cwd, dir, "skills")),
-    ...AGENT_DIRS.map((dir) => join(home, dir, "skills")),
+    ...SCAN_DIRS.map((dir) => join(cwd, ...dir.split("/"))),
+    ...SCAN_DIRS.map((dir) => join(home, ...dir.split("/"))),
   ];
   return [...new Set(candidates.filter((path) => existsSync(path)))];
 }

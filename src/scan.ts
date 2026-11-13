@@ -2,9 +2,11 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseFrontmatter, type Frontmatter } from "./parser.js";
 import { isClaudeSkillsRoot } from "./roots.js";
+import { FACTS } from "./agents.js";
 
 /** Claude Code keeps skills downloaded from claude.ai in this reserved folder. */
-export const CLAUDE_SYNCED_FOLDER = "synced";
+export const CLAUDE_SYNCED_FOLDER = FACTS["claude.syncedFolder"].value;
+export const SKILL_FILE = FACTS["spec.skillFile"].value;
 
 export function isReservedSkillName(name: string): boolean {
   return name.toLowerCase() === CLAUDE_SYNCED_FOLDER;
@@ -27,7 +29,7 @@ export function scanRoot(root: string): SkillFolder[] {
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((entry) => {
       const path = join(root, entry.name);
-      const skillMdPath = join(path, "SKILL.md");
+      const skillMdPath = join(path, SKILL_FILE);
       const hasSkillMd = existsSync(skillMdPath);
       const frontmatter = hasSkillMd
         ? parseFrontmatter(readFileSync(skillMdPath, "utf8"))
