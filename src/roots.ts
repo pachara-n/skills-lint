@@ -17,6 +17,31 @@ export function isClaudeSkillsRoot(root: string): boolean {
   );
 }
 
+/** True when the last segments of `root` are `dir` (e.g. ".codex/skills"), any case. */
+function endsWithDir(root: string, dir: string): boolean {
+  const parts = dir.replace(/^~\//, "").split("/").reverse();
+  let current = root;
+  for (const part of parts) {
+    if (basename(current).toLowerCase() !== part.toLowerCase()) return false;
+    current = dirname(current);
+  }
+  return true;
+}
+
+const CODEX_DIRS = [
+  ...FACTS["codex.projectRoots"].value.dirs,
+  ...FACTS["codex.userRoots"].value.dirs,
+];
+
+/**
+ * True when `root` is a folder Codex reads (`.agents/skills` or
+ * `.codex/skills`, project or user level). Codex-only loader quirks, such as
+ * the BOM, are errors there and warnings elsewhere.
+ */
+export function isCodexSkillsRoot(root: string): boolean {
+  return CODEX_DIRS.some((dir) => endsWithDir(root, dir));
+}
+
 /**
  * Well-known skills folders, project-level first (project skills shadow
  * user-level skills in most agents), then user-level. Only folders that

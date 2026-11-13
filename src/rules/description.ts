@@ -4,26 +4,20 @@ import { FACTS } from "../agents.js";
 
 export const MAX_DESCRIPTION_LENGTH = FACTS["spec.descriptionMaxLength"].value;
 
-/** Rule 2: description missing or longer than the spec limit gets the skill silently dropped. */
+const kind = (value: unknown): string =>
+  Array.isArray(value) ? "a list" : typeof value === "object" ? "a mapping" : `a ${typeof value}`;
+
+/** Rule 2: description missing, not text, or longer than the spec limit. */
 export function descriptionRule(skills: SkillFolder[]): Issue[] {
   const issues: Issue[] = [];
   for (const skill of skills) {
-    if (!skill.hasSkillMd) continue; // already reported by no-skill-md
+    const fm = skill.frontmatter;
+    // no SKILL.md or a broken block: reported by no-skill-md / frontmatter
+    if (fm === null || !fm.ok) continue;
 
-    if (skill.frontmatter === null) {
-      issues.push({
-        rule: "description",
-        severity: "error",
-        path: skill.skillMdPath,
-        line: 1,
-        facts: ["spec.requiredFields"],
-        message: "SKILL.md has no valid frontmatter block (missing or unterminated ---)",
-      });
-      continue;
-    }
-
-    const { description } = skill.frontmatter;
-    if (description === "") {
+    const raw = fm.data["description"];
+    const line = fm.lines["description"] ?? 1;
+    if (raw === undefined || raw === null || raw === "") {
       issues.push({
         rule: "description",
         severity: "error",
@@ -32,14 +26,23 @@ export function descriptionRule(skills: SkillFolder[]): Issue[] {
         facts: ["spec.requiredFields"],
         message: "description is missing — the skill is silently dropped",
       });
-    } else if (description.length > MAX_DESCRIPTION_LENGTH) {
+    } else if (typeof raw !== "string") {
       issues.push({
         rule: "description",
         severity: "error",
         path: skill.skillMdPath,
-        line: skill.frontmatter.lines?.["description"] ?? 1,
+        line,
+        facts: ["spec.requiredFields"],
+        message: `description must be text, not ${kind(raw)} — quote it if it is meant as text`,
+      });
+    } else if (raw.length > MAX_DESCRIPTION_LENGTH) {
+      issues.push({
+        rule: "description",
+        severity: "error",
+        path: skill.skillMdPath,
+        line,
         facts: ["spec.descriptionMaxLength"],
-        message: `description is ${description.length} characters (max ${MAX_DESCRIPTION_LENGTH}) — the skill is silently dropped`,
+        message: `description is ${raw.length} characters (max ${MAX_DESCRIPTION_LENGTH}) — the skill is silently dropped`,
       });
     }
   }

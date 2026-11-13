@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseFrontmatter, type Frontmatter } from "./parser.js";
+import { parseFrontmatter, type ParseResult } from "./parser.js";
 import { isClaudeSkillsRoot } from "./roots.js";
 import { FACTS } from "./agents.js";
 
@@ -18,7 +18,7 @@ export interface SkillFolder {
   name: string; // folder name
   skillMdPath: string;
   hasSkillMd: boolean;
-  frontmatter: Frontmatter | null; // null when SKILL.md is missing or unparseable
+  frontmatter: ParseResult | null; // null when SKILL.md is missing
 }
 
 /** List the skill folders inside one discovery root (dot-folders skipped). */

@@ -1,5 +1,6 @@
 import { scanRoot, type SkillFolder } from "./scan.js";
 import { noSkillMd } from "./rules/no-skill-md.js";
+import { frontmatterRule } from "./rules/frontmatter.js";
 import { descriptionRule } from "./rules/description.js";
 import { shadowing } from "./rules/shadowing.js";
 import { sprawled } from "./rules/sprawled.js";
@@ -13,6 +14,7 @@ export function lint(roots: string[]): { skills: SkillFolder[]; issues: Issue[] 
   const activeRoots = [...new Set(skills.map((s) => s.root))];
   const issues = [
     ...noSkillMd(skills),
+    ...frontmatterRule(skills),
     ...descriptionRule(skills),
     ...shadowing(skills),
     ...reservedName(skills),

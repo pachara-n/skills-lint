@@ -96,8 +96,9 @@ Each finding has a severity. **Errors** fail the run; **warnings** are reported 
 | Rule | Severity | Finding |
 | --- | --- | --- |
 | `no-skill-md` | error | A folder in a skills root has no `SKILL.md` |
-| `description` | error | `SKILL.md` has no frontmatter block, or it is not closed with `---` |
-| `description` | error | `description` is missing, or longer than the spec limit of 1024 characters |
+| `frontmatter` | error | `SKILL.md` does not start with a `---` block, the block is not closed, is not valid YAML, or is not `key: value` pairs. An unquoted `: ` inside a value is called out with its line, since Claude Code then loads the skill with no fields set |
+| `frontmatter` | error / warning | The file starts with a UTF-8 BOM, which hides the frontmatter from Codex: an error in folders Codex reads (`.agents/skills`, `.codex/skills`), a warning elsewhere |
+| `description` | error | `description` is missing, is not text (a list or mapping), or is longer than the spec limit of 1024 characters |
 | `shadowed` | error | The same skill name appears in more than one scanned root; the copy in the later root is reported |
 | `reserved-name` | error | A skill folder is named `synced` (any capitalization) inside `.claude/skills`; Claude Code reserves that name for skills downloaded from claude.ai and skips it |
 | `sprawled` | warning | Skills are spread across several scanned roots |
@@ -194,7 +195,6 @@ v0.2 is deliberately small, and these are known gaps. Each one has an open issue
 - **Symlinked skill folders are skipped**, including the common layout where skills in `~/.claude/skills` link to `~/.agents/skills`. → [#2](https://github.com/pachara-n/skills-lint/issues/2)
 - **`~/.claude/skills/synced`** (skills synced from claude.ai) is skipped when it has no `SKILL.md`, and a user-authored skill under that reserved name is reported. Its downloaded contents are not counted or inspected yet. → [#4](https://github.com/pachara-n/skills-lint/issues/4)
 - **Nested category folders** (`skills/tools/pdf/SKILL.md`), which Codex and Cursor support, are reported as folders without `SKILL.md`. → [#14](https://github.com/pachara-n/skills-lint/issues/14)
-- **Frontmatter is read as flat `key: value` lines**, not full YAML: multi-line (`>` / `|`) descriptions are not measured correctly and invalid YAML is not detected. → [#5](https://github.com/pachara-n/skills-lint/issues/5)
 - `name` and other fields are not validated yet. → [#8](https://github.com/pachara-n/skills-lint/issues/8), [#17](https://github.com/pachara-n/skills-lint/issues/17)
 
 ## CI
